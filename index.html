@@ -257,7 +257,7 @@
         // ==========================================
         const CONFIG = {
             // Google Apps Script 部署的網址（必填）
-            API_URL: 'https://script.google.com/macros/s/AKfycbxue8c725gBBrRvit0hbVSqPknMr6Ru66meCDi_y3EtpnS5qJAoN01k7CDfUIWhRnNByA/exec',
+            API_URL: 'https://script.google.com/macros/s/AKfycbx4bYuhhGDqjZ-nWIqgNckKVwFdwKJrIj9xIqWyGWNQo6aYXjUQFBsgmH5Oe0PNS_ZB/exec',
             
             // 自動更新統計的時間間隔（毫秒）
             STATS_UPDATE_INTERVAL: 30000 // 30秒
@@ -344,39 +344,43 @@
             showStatus('正在分配金鑰並發送郵件，請稍候...', 'info');
 
             try {
-                const response = await fetch(CONFIG.API_URL, {
-                    method: 'POST',
-                    mode: 'no-cors', // 使用 no-cors 模式避免 CORS 問題
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        action: 'assignKey',
-                        ...formData
-                    })
+                // 使用 GET 請求包裝 POST 資料（Apps Script 的替代方案）
+                const params = new URLSearchParams({
+                    action: 'assignKey',
+                    userName: formData.userName,
+                    orderNumber: formData.orderNumber,
+                    userEmail: formData.userEmail,
+                    _method: 'POST',
+                    _t: Date.now()
                 });
 
-                // 因為 no-cors 模式無法讀取回應，我們假設成功
-                // 實際狀態會在下次統計更新時反映
-                showStatus(
-                    `✅ 金鑰分配請求已送出！`, 
-                    'success',
-                    {
-                        keyCode: '處理中...',
-                        email: formData.userEmail,
-                        keyContent: '郵件將在數秒內送達'
-                    }
-                );
-                
-                document.getElementById('keyForm').reset();
-                
-                // 延遲更新統計以確保後端處理完成
-                setTimeout(() => {
+                const response = await fetch(`${CONFIG.API_URL}?${params.toString()}`, {
+                    method: 'GET',
+                    redirect: 'follow'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showStatus(
+                        `✅ 金鑰分配成功！郵件已發送至 ${formData.userEmail}`, 
+                        'success',
+                        {
+                            keyCode: data.keyCode,
+                            email: formData.userEmail,
+                            keyContent: data.keyContent
+                        }
+                    );
+                    
+                    document.getElementById('keyForm').reset();
                     updateStats();
-                }, 3000);
+                } else {
+                    showStatus(`❌ 操作失敗: ${data.message}`, 'error');
+                }
 
             } catch (error) {
-                showStatus(`❌ 系統錯誤: ${error.message}`, 'error');
+                showStatus(`❌ 系統錯誤: ${error.message}<br><small>請確認網路連線並稍後再試</small>`, 'error');
+                console.error('詳細錯誤:', error);
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = '發送金鑰';
