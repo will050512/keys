@@ -345,22 +345,48 @@
             showStatus('正在分配金鑰並發送郵件，請稍候...', 'info');
 
             try {
-                // 使用 GET 請求包裝 POST 資料（Apps Script 的替代方案）
+                // 使用 JSONP 方式避免 CORS 問題
+                const callbackName = 'assignKeyCallback_' + Date.now();
                 const params = new URLSearchParams({
                     action: 'assignKey',
                     userName: formData.userName,
                     orderNumber: formData.orderNumber,
                     userEmail: formData.userEmail,
-                    _method: 'POST',
+                    callback: callbackName,
                     _t: Date.now()
                 });
 
-                const response = await fetch(`${CONFIG.API_URL}?${params.toString()}`, {
-                    method: 'GET',
-                    redirect: 'follow'
+                // 建立 Promise 來處理 JSONP 回應
+                const jsonpPromise = new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => {
+                        cleanup();
+                        reject(new Error('請求超時'));
+                    }, 30000); // 30秒超時
+
+                    window[callbackName] = (data) => {
+                        clearTimeout(timeout);
+                        cleanup();
+                        resolve(data);
+                    };
+
+                    const script = document.createElement('script');
+                    script.id = callbackName;
+                    script.src = `${CONFIG.API_URL}?${params.toString()}`;
+                    script.onerror = () => {
+                        clearTimeout(timeout);
+                        cleanup();
+                        reject(new Error('無法連接到伺服器'));
+                    };
+                    document.head.appendChild(script);
+
+                    function cleanup() {
+                        delete window[callbackName];
+                        const scriptEl = document.getElementById(callbackName);
+                        if (scriptEl) scriptEl.remove();
+                    }
                 });
 
-                const data = await response.json();
+                const data = await jsonpPromise;
 
                 if (data.success) {
                     showStatus(
@@ -374,13 +400,13 @@
                     );
                     
                     document.getElementById('keyForm').reset();
-                    updateStats();
+                    setTimeout(updateStats, 2000);
                 } else {
                     showStatus(`❌ 操作失敗: ${data.message}`, 'error');
                 }
 
             } catch (error) {
-                showStatus(`❌ 系統錯誤: ${error.message}<br><small>請確認網路連線並稍後再試</small>`, 'error');
+                showStatus(`❌ 系統錯誤: ${error.message}<br><small>請確認網路連線並稍後再試，或聯絡技術人員</small>`, 'error');
                 console.error('詳細錯誤:', error);
             } finally {
                 submitBtn.disabled = false;
