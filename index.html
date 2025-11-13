@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>愛米號金鑰管理系統</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            display: none;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #f0f0f0;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .success-detail {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border-left: 4px solid #28a745;
+        }
+
+        .success-detail strong {
+            color: #155724;
+        }
+
+        .key-display {
+            font-family: 'Courier New', monospace;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 8px;
+            font-size: 14px;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔑 愛米號金鑰管理系統</h1>
+            <p>業務端金鑰分發系統 v1.0</p>
+        </div>
+
+        <form id="keyForm">
+            <div class="form-group">
+                <label for="userName">用戶姓名 *</label>
+                <input type="text" id="userName" name="userName" required placeholder="請輸入用戶姓名">
+            </div>
+
+            <div class="form-group">
+                <label for="orderNumber">訂單編號 *</label>
+                <input type="text" id="orderNumber" name="orderNumber" required placeholder="例如：ORD20241113001">
+            </div>
+
+            <div class="form-group">
+                <label for="userEmail">用戶信箱 *</label>
+                <input type="email" id="userEmail" name="userEmail" required placeholder="user@example.com">
+                <div class="hint">金鑰將發送至此信箱</div>
+            </div>
+
+            <button type="submit" class="btn" id="submitBtn">
+                發送金鑰
+            </button>
+        </form>
+
+        <div id="status" class="status"></div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="availableKeys">--</div>
+                <div class="stat-label">可用金鑰</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="usedKeys">--</div>
+                <div class="stat-label">已使用</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 🔧 設定區域 - 管理員請在這裡修改設定
+        // ==========================================
+        const CONFIG = {
+            // Google Apps Script 部署的網址（必填）
+            API_URL: 'https://script.google.com/macros/s/AKfycbxue8c725gBBrRvit0hbVSqPknMr6Ru66meCDi_y3EtpnS5qJAoN01k7CDfUIWhRnNByA/exec',
+            
+            // 自動更新統計的時間間隔（毫秒）
+            STATS_UPDATE_INTERVAL: 30000 // 30秒
+        };
+        // ==========================================
+
+        // 顯示狀態訊息
+        function showStatus(message, type = 'info', details = null) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${type}`;
+            
+            let content = message;
+            if (details && type === 'success') {
+                content += `<div class="success-detail">
+                    <strong>分配資訊：</strong><br>
+                    金鑰編號：${details.keyCode}<br>
+                    用戶信箱：${details.email}
+                    <div class="key-display">${details.keyContent || '已發送至信箱'}</div>
+                </div>`;
+            }
+            
+            statusDiv.innerHTML = content;
+            statusDiv.style.display = 'block';
+            
+            if (type === 'success' || type === 'error') {
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 8000);
+            }
+        }
+
+        // 更新統計資料
+        async function updateStats() {
+            if (!CONFIG.API_URL || CONFIG.API_URL.includes('YOUR_DEPLOYMENT_ID')) {
+                console.warn('API URL 尚未設定');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${CONFIG.API_URL}?action=getStats&t=${Date.now()}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('availableKeys').textContent = data.available;
+                    document.getElementById('usedKeys').textContent = data.used;
+                }
+            } catch (error) {
+                console.error('更新統計失敗:', error);
+            }
+        }
+
+        // 檢查 API 設定
+        function checkApiConfig() {
+            if (!CONFIG.API_URL || CONFIG.API_URL.includes('YOUR_DEPLOYMENT_ID')) {
+                showStatus('⚠️ 系統尚未設定完成，請聯絡技術人員設定 API URL', 'error');
+                document.getElementById('submitBtn').disabled = true;
+                return false;
+            }
+            return true;
+        }
+
+        // 表單提交
+        document.getElementById('keyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!checkApiConfig()) return;
+
+            const submitBtn = document.getElementById('submitBtn');
+            const formData = {
+                userName: document.getElementById('userName').value.trim(),
+                orderNumber: document.getElementById('orderNumber').value.trim(),
+                userEmail: document.getElementById('userEmail').value.trim()
+            };
+
+            // 簡單驗證
+            if (!formData.userName || !formData.orderNumber || !formData.userEmail) {
+                showStatus('❌ 請填寫所有必填欄位', 'error');
+                return;
+            }
+
+            // 顯示載入狀態
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="loading"></span> 處理中...';
+            showStatus('正在分配金鑰並發送郵件，請稍候...', 'info');
+
+            try {
+                const response = await fetch(CONFIG.API_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // 使用 no-cors 模式避免 CORS 問題
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'assignKey',
+                        ...formData
+                    })
+                });
+
+                // 因為 no-cors 模式無法讀取回應，我們假設成功
+                // 實際狀態會在下次統計更新時反映
+                showStatus(
+                    `✅ 金鑰分配請求已送出！`, 
+                    'success',
+                    {
+                        keyCode: '處理中...',
+                        email: formData.userEmail,
+                        keyContent: '郵件將在數秒內送達'
+                    }
+                );
+                
+                document.getElementById('keyForm').reset();
+                
+                // 延遲更新統計以確保後端處理完成
+                setTimeout(() => {
+                    updateStats();
+                }, 3000);
+
+            } catch (error) {
+                showStatus(`❌ 系統錯誤: ${error.message}`, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '發送金鑰';
+            }
+        });
+
+        // 頁面載入時執行
+        window.addEventListener('load', () => {
+            if (checkApiConfig()) {
+                updateStats();
+                // 定期更新統計
+                setInterval(updateStats, CONFIG.STATS_UPDATE_INTERVAL);
+            }
+        });
+    </script>
+</body>
+</html>
